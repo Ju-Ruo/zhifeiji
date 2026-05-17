@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>纸飞机工程师 Demo</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="stage-panel" aria-label="飞行模拟区">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">题目 5 Demo</p>
+            <h1>纸飞机工程师</h1>
+          </div>
+          <div class="mission-score">
+            <span id="missionLabel">远航挑战</span>
+            <strong id="scoreLabel" aria-live="polite">等待投掷</strong>
+          </div>
+        </header>
+
+        <div class="canvas-wrap">
+          <div class="view-switch" role="group" aria-label="切换飞行视角">
+            <button class="active" data-view="2d" type="button">2D</button>
+            <button data-view="3d" type="button">3D</button>
+            <button data-view="wind" type="button">风洞</button>
+          </div>
+          <button id="guideOpenButton" class="guide-open-button" type="button">引导</button>
+          <div class="camera-hint">3D：拖拽旋转，Shift 拖拽平移，滚轮缩放，双击复位</div>
+          <canvas
+            id="flightCanvas"
+            width="1200"
+            height="680"
+            role="img"
+            aria-label="纸飞机飞行模拟画布。画面包含投掷点、飞行轨迹、速度矢量、地面刻度和任务目标。"
+          >
+            纸飞机飞行模拟：调整参数后点击投掷，系统会绘制飞行轨迹并显示距离、速度、迎角和升阻比。
+          </canvas>
+          <div class="hud">
+            <div><span>距离</span><strong id="distanceMetric">0.0 m</strong></div>
+            <div><span>滞空</span><strong id="timeMetric">0.0 s</strong></div>
+            <div><span>速度</span><strong id="speedMetric">0.0 m/s</strong></div>
+            <div><span>迎角</span><strong id="aoaMetric">0°</strong></div>
+            <div><span>升阻比</span><strong id="ldMetric">0.0</strong></div>
+            <div><span>姿态</span><strong id="stabilityMetric">稳定</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="control-panel" aria-label="纸飞机设计参数">
+        <nav class="side-tabs" aria-label="侧栏分组">
+          <button class="active" data-side-tab="mission" type="button">任务折纸</button>
+          <button data-side-tab="design" type="button">参数投掷</button>
+          <button data-side-tab="analysis" type="button">数据复盘</button>
+        </nav>
+
+        <details class="tool-section" data-side-panel="mission" open>
+          <summary class="section-heading">
+            <h2>教学关卡</h2>
+            <span id="targetHint">目标 32 m</span>
+          </summary>
+          <div class="section-body">
+            <div class="segmented" role="group" aria-label="选择教学关卡">
+              <button class="active" data-mission="distance" type="button">远航</button>
+              <button data-mission="hangtime" type="button">滞空</button>
+              <button data-mission="egg" type="button">投送</button>
+            </div>
+            <p id="missionRule" class="rule-text">飞行距离达到 32 m 即达标；距离越远，评分越高。</p>
+          </div>
+        </details>
+
+        <details class="tool-section" data-side-panel="mission" open>
+          <summary class="section-heading">
+            <h2>折纸工位</h2>
+            <span id="foldingHint">标准镖型</span>
+          </summary>
+          <div class="section-body">
+            <div class="folding-board" aria-hidden="true">
+              <div id="foldPaper" class="fold-paper">
+                <span class="crease center"></span>
+                <span id="leftCrease" class="crease left"></span>
+                <span id="rightCrease" class="crease right"></span>
+                <span id="noseFold" class="crease nose"></span>
+              </div>
+            </div>
+            <div class="fold-options" role="group" aria-label="选择折法">
+              <button class="active" data-fold="dart" type="button">标准镖型</button>
+              <button data-fold="glider" type="button">宽翼滑翔</button>
+              <button data-fold="stunt" type="button">上反稳翼</button>
+              <button data-fold="cargo" type="button">载荷投送</button>
+            </div>
+            <div class="fold-actions">
+              <button id="foldPreviewButton" class="ghost-button" type="button">播放折叠预览</button>
+            </div>
+            <p id="foldingExplain" class="rule-text">尖锐机头、较小翼面和中前重心，适合远航冲刺。</p>
+          </div>
+        </details>
+
+        <details class="tool-section" data-side-panel="design" open>
+          <summary class="section-heading">
+            <h2>设计参数</h2>
+            <button id="randomPresetButton" class="icon-button" type="button" title="随机方案" aria-label="随机方案" onclick="event.preventDefault(); event.stopPropagation();">↻</button>
+          </summary>
+          <div class="section-body">
+            <label class="control-row">
+              <span>机翼面积</span>
+              <output id="wingAreaValue">110 cm²</output>
+              <input id="wingArea" type="range" min="70" max="180" value="110" />
+              <input id="wingAreaNumber" class="number-input" type="number" min="70" max="180" step="1" value="110" aria-label="机翼面积数值" />
+            </label>
+
+            <label class="control-row">
+              <span>重心位置</span>
+              <output id="centerGravityValue">45%</output>
+              <input id="centerGravity" type="range" min="25" max="75" value="45" />
+              <input id="centerGravityNumber" class="number-input" type="number" min="25" max="75" step="1" value="45" aria-label="重心位置数值" />
+            </label>
+
+            <label class="control-row">
+              <span>折叠角度</span>
+              <output id="foldAngleValue">15°</output>
+              <input id="foldAngle" type="range" min="5" max="32" value="15" />
+              <input id="foldAngleNumber" class="number-input" type="number" min="5" max="32" step="1" value="15" aria-label="折叠角度数值" />
+            </label>
+
+            <fieldset class="swatch-group">
+              <legend>翼尖形状</legend>
+              <label>
+                <input checked name="wingTip" type="radio" value="flat" />
+                <span class="swatch flat"></span>
+              平直
+            </label>
+            <label>
+              <input name="wingTip" type="radio" value="dihedral" />
+              <span class="swatch dihedral"></span>
+              上反
+            </label>
+            <label>
+              <input name="wingTip" type="radio" value="winglet" />
+              <span class="swatch winglet"></span>
+              小翼
+            </label>
+          </fieldset>
+          </div>
+        </details>
+
+        <details class="tool-section" data-side-panel="design" open>
+          <summary class="section-heading">
+            <h2>投掷</h2>
+            <span id="launchHint">力度 70%</span>
+          </summary>
+          <div class="section-body">
+            <label class="control-row">
+              <span>投掷角度</span>
+              <output id="launchAngleValue">17°</output>
+              <input id="launchAngle" type="range" min="5" max="40" value="17" />
+              <input id="launchAngleNumber" class="number-input" type="number" min="5" max="40" step="1" value="17" aria-label="投掷角度数值" />
+            </label>
+
+            <label class="control-row">
+              <span>出手力度</span>
+              <output id="launchPowerValue">70%</output>
+              <input id="launchPower" type="range" min="35" max="100" value="70" />
+              <input id="launchPowerNumber" class="number-input" type="number" min="35" max="100" step="1" value="70" aria-label="出手力度数值" />
+            </label>
+
+            <label class="toggle-row">
+              <span>鸡蛋载荷</span>
+              <input id="payloadToggle" type="checkbox" />
+            </label>
+          </div>
+        </details>
+
+        <details class="tool-section" data-side-panel="analysis" open>
+          <summary class="section-heading">
+            <h2>环境</h2>
+            <span id="windHint">侧风 0.8 m/s</span>
+          </summary>
+          <div class="section-body">
+            <div class="environment-grid">
+            <div>
+              <span>侧风</span>
+              <strong id="crosswindMetric">0.8 m/s</strong>
+            </div>
+            <div>
+              <span>乱流</span>
+              <strong id="turbulenceMetric">中</strong>
+            </div>
+            <div>
+              <span>地效</span>
+              <strong id="groundEffectMetric">未进入</strong>
+            </div>
+            <div>
+              <span>失速区间</span>
+              <strong id="stallMetric">安全</strong>
+            </div>
+          </div>
+        </details>
+
+        <details class="tool-section" data-side-panel="design" open>
+          <summary class="section-heading">
+            <h2>预设</h2>
+            <span id="presetHint">本机保存</span>
+          </summary>
+          <div class="section-body">
+            <div class="preset-actions">
+              <button id="savePresetButton" class="ghost-button" type="button">保存当前</button>
+              <button id="loadPresetButton" class="ghost-button" type="button">载入保存</button>
+            </div>
+          </div>
+        </details>
+
+        <section class="tool-section compare-box" data-side-panel="design">
+          <div class="section-heading">
+            <h2>A/B 试验台</h2>
+            <span id="compareHint">保存两个方案</span>
+          </div>
+          <div class="compare-actions">
+            <button id="saveSlotAButton" class="ghost-button" type="button">存为 A</button>
+            <button id="saveSlotBButton" class="ghost-button" type="button">存为 B</button>
+            <button id="runCompareButton" class="primary-button" type="button">对比试飞</button>
+          </div>
+          <div class="compare-table" aria-label="A/B 方案对比">
+            <div><span>方案</span><strong>A</strong><strong>B</strong></div>
+            <div><span>距离</span><strong id="compareADistance">--</strong><strong id="compareBDistance">--</strong></div>
+            <div><span>滞空</span><strong id="compareATime">--</strong><strong id="compareBTime">--</strong></div>
+            <div><span>最大迎角</span><strong id="compareAAoa">--</strong><strong id="compareBAoa">--</strong></div>
+            <div><span>最低升阻比</span><strong id="compareALd">--</strong><strong id="compareBLd">--</strong></div>
+            <div><span>冲击</span><strong id="compareAImpact">--</strong><strong id="compareBImpact">--</strong></div>
+          </div>
+        </section>
+
+        <section class="tool-section result-box" data-side-panel="analysis">
+          <h2>工程反馈</h2>
+          <p id="feedbackText" aria-live="polite">调好参数后投掷，系统会根据升力、阻力、重心、侧风、地效和着陆冲击给出反馈。</p>
+          <div id="resultAnnouncer" class="sr-only" aria-live="assertive"></div>
+          <div class="actions">
+            <button id="launchButton" class="primary-button" type="button">投掷</button>
+            <button id="resetButton" class="ghost-button" type="button">重置</button>
+          </div>
+        </section>
+
+        <section class="tool-section report-box" data-side-panel="analysis">
+          <div class="section-heading">
+            <h2>飞行复盘</h2>
+            <span id="reportBadge">未飞行</span>
+          </div>
+          <div class="report-grid">
+            <div><span>最大迎角</span><strong id="reportMaxAoa">--</strong></div>
+            <div><span>最低升阻比</span><strong id="reportMinLd">--</strong></div>
+            <div><span>失速时长</span><strong id="reportStallTime">--</strong></div>
+            <div><span>落地冲击</span><strong id="reportImpact">--</strong></div>
+          </div>
+          <p id="reportAdvice" class="rule-text">完成一次投掷后，这里会生成类似工程试飞报告的复盘。</p>
+        </section>
+
+        <section class="tool-section score-box" data-side-panel="analysis">
+          <div class="section-heading">
+            <h2>关卡成绩</h2>
+            <span id="scoreStars">☆☆☆</span>
+          </div>
+          <div class="score-grid">
+            <div><span>远航最佳</span><strong id="bestDistanceScore">--</strong></div>
+            <div><span>滞空最佳</span><strong id="bestHangtimeScore">--</strong></div>
+            <div><span>投送最佳</span><strong id="bestEggScore">--</strong></div>
+            <div><span>本次徽章</span><strong id="runBadges">--</strong></div>
+          </div>
+        </section>
+      </aside>
+    </main>
+
+    <div id="guideOverlay" class="guide-overlay" hidden>
+      <section class="guide-card" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+        <div class="guide-stepper" aria-hidden="true">
+          <span class="active"></span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <p id="guideEyebrow" class="eyebrow">第 1 步 / 4</p>
+        <h2 id="guideTitle">先选一种折法</h2>
+        <p id="guideText">从标准镖型、宽翼滑翔、上反稳翼或载荷投送开始。折法会自动映射机翼面积、重心、折叠角和翼尖形状。</p>
+        <div class="guide-actions">
+          <button id="guideSkipButton" class="ghost-button" type="button">跳过</button>
+          <button id="guidePrevButton" class="ghost-button" type="button">上一步</button>
+          <button id="guideNextButton" class="primary-button" type="button">下一步</button>
+        </div>
+      </section>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
